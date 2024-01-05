@@ -3,10 +3,10 @@ package com.devsuperior.demo.services;
 import com.devsuperior.demo.dto.CityDTO;
 import com.devsuperior.demo.entities.City;
 import com.devsuperior.demo.repositories.CityRepository;
+import com.devsuperior.demo.services.exceptions.DatabaseExceptionException;
+import com.devsuperior.demo.services.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +25,22 @@ public class CityService {
         return page.stream().map(CityDTO::new).toList();
     }
 
+    @Transactional
     public CityDTO insert(CityDTO dto) {
         City entity = new City();
         entity.setName(dto.getName());
         return new CityDTO(repository.save(entity));
+    }
+
+    public void delete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new ResourceNotFoundException("Resource not found");
+        }
+        try {
+            repository.deleteById(id);
+        }
+        catch (DataIntegrityViolationException e) {
+            throw new DatabaseExceptionException("Referential integrity failure");
+        }
     }
 }
